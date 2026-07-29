@@ -1,3 +1,4 @@
+use anyhow::Context;
 use chrono::{Datelike, Timelike, Utc};
 use futures::StreamExt;
 use rig::agent::MultiTurnStreamItem;
@@ -130,19 +131,23 @@ async fn execute_agent(
     keys: &ApiKeys,
     on_event: &Channel<AgentEvent>,
 ) -> anyhow::Result<String> {
-    let mut tavily_command = Command::new("npx");
+    let mut tavily_command = npx_command();
     tavily_command
         .arg("-y")
         .arg("tavily-mcp@latest")
         .env("TAVILY_API_KEY", &keys.tavily_api_key);
-    let (tavily_transport, _) = TokioChildProcess::builder(tavily_command).spawn()?;
+    let (tavily_transport, _) = TokioChildProcess::builder(tavily_command)
+        .spawn()
+        .context("无法启动 npx，请安装 Node.js LTS 并重新启动应用")?;
 
-    let mut filesystem_command = Command::new("npx");
+    let mut filesystem_command = npx_command();
     filesystem_command
         .arg("-y")
         .arg("@modelcontextprotocol/server-filesystem")
         .arg(directory);
-    let (filesystem_transport, _) = TokioChildProcess::builder(filesystem_command).spawn()?;
+    let (filesystem_transport, _) = TokioChildProcess::builder(filesystem_command)
+        .spawn()
+        .context("无法启动 npx，请安装 Node.js LTS 并重新启动应用")?;
 
     let client_info = ClientInfo::new(
         ClientCapabilities::default(),
@@ -188,6 +193,15 @@ async fn execute_agent(
     }
 
     Ok(response)
+}
+
+fn npx_command() -> Command {
+    #[cfg(target_os = "windows")]
+    let command = "npx.cmd";
+    #[cfg(not(target_os = "windows"))]
+    let command = "npx";
+
+    Command::new(command)
 }
 
 fn load_keys(path: &Path) -> Result<ApiKeys, String> {

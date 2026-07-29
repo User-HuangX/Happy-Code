@@ -1,0 +1,29 @@
+name: Windows Installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+
+      - name: Build NSIS installer
+        uses: tauri-apps/tauri-action@v1
+        with:
+          args: --bundles nsis
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: happy-code-windows-installer

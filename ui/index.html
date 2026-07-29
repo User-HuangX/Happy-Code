@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Happy Code</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        --background: #f4f5f2;
+        --panel: #fcfcfa;
+        --text: #20231f;
+        --muted: #666b64;
+        --border: #d8dbd5;
+        --accent: #256447;
+        --accent-hover: #1e533b;
+        --output: #171a17;
+        --output-text: #e6ebe5;
+        --error: #a63d32;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100dvh;
+        background: var(--background);
+        color: var(--text);
+      }
+
+      main {
+        width: min(920px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 36px 0;
+      }
+
+      header {
+        margin-bottom: 24px;
+      }
+
+      h1 {
+        margin: 0 0 6px;
+        font-size: clamp(26px, 4vw, 36px);
+        letter-spacing: -0.04em;
+      }
+
+      header p,
+      .hint {
+        color: var(--muted);
+      }
+
+      header p {
+        margin: 0;
+      }
+
+      form {
+        display: grid;
+        gap: 18px;
+        padding: 24px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: var(--panel);
+      }
+
+      .key-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        font-size: 14px;
+        font-weight: 650;
+      }
+
+      input,
+      textarea,
+      button {
+        font: inherit;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 9px;
+        padding: 11px 12px;
+        background: var(--background);
+        color: var(--text);
+        outline: none;
+      }
+
+      input:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+      }
+
+      textarea {
+        min-height: 120px;
+        resize: vertical;
+        line-height: 1.55;
+      }
+
+      .hint {
+        font-size: 12px;
+        font-weight: 400;
+      }
+
+      button {
+        justify-self: start;
+        border: 0;
+        border-radius: 9px;
+        padding: 11px 22px;
+        background: var(--accent);
+        color: #f7faf7;
+        font-weight: 700;
+        cursor: pointer;
+      }
+
+      button:hover:not(:disabled) {
+        background: var(--accent-hover);
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(1px);
+      }
+
+      button:disabled {
+        cursor: wait;
+        opacity: 0.6;
+      }
+
+      .result {
+        margin-top: 20px;
+      }
+
+      .result-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 8px;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 16px;
+      }
+
+      #status {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      #status.error {
+        color: var(--error);
+      }
+
+      #output {
+        min-height: 180px;
+        margin: 0;
+        padding: 18px;
+        overflow: auto;
+        border-radius: 12px;
+        background: var(--output);
+        color: var(--output-text);
+        font: 13px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --background: #171a17;
+          --panel: #202420;
+          --text: #edf0eb;
+          --muted: #adb4aa;
+          --border: #3a4039;
+          --accent: #4d9b72;
+          --accent-hover: #5cab82;
+          --output: #0f120f;
+          --output-text: #dfe6dd;
+          --error: #ed8378;
+        }
+      }
+
+      @media (max-width: 640px) {
+        main {
+          width: min(100% - 20px, 920px);
+          padding: 20px 0;
+        }
+
+        form {
+          padding: 18px;
+        }
+
+        .key-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>本地 AI 助手</h1>
+        <p>指定工作目录，让 AI 在受限目录内完成任务。</p>
+      </header>
+
+      <form id="agent-form">
+        <div class="key-grid">
+          <label>
+            DeepSeek API Key
+            <input id="deepseek-key" type="password" autocomplete="off" />
+            <span class="hint" id="deepseek-hint">首次使用时需要填写</span>
+          </label>
+
+          <label>
+            Tavily API Key
+            <input id="tavily-key" type="password" autocomplete="off" />
+            <span class="hint" id="tavily-hint">首次使用时需要填写</span>
+          </label>
+        </div>
+
+        <label>
+          工作目录
+          <input id="directory" type="text" required />
+          <span class="hint">AI 的文件工具只能访问此目录</span>
+        </label>
+
+        <label>
+          任务内容
+          <textarea id="prompt" required placeholder="例如：创建一个 Python Hello World 文件"></textarea>
+        </label>
+
+        <button id="submit" type="submit">开始执行</button>
+      </form>
+
+      <section class="result" aria-live="polite">
+        <div class="result-header">
+          <h2>AI 输出</h2>
+          <span id="status">等待任务</span>
+        </div>
+        <pre id="output">运行结果会显示在这里。</pre>
+      </section>
+    </main>
+
+    <script>
+      const { invoke, Channel } = window.__TAURI__.core;
+      const form = document.querySelector("#agent-form");
+      const submitButton = document.querySelector("#submit");
+      const output = document.querySelector("#output");
+      const status = document.querySelector("#status");
+      const deepseekKey = document.querySelector("#deepseek-key");
+      const tavilyKey = document.querySelector("#tavily-key");
+
+      function setStatus(message, isError = false) {
+        status.textContent = message;
+        status.classList.toggle("error", isError);
+      }
+
+      async function loadSettings() {
+        try {
+          const settings = await invoke("get_settings");
+          document.querySelector("#directory").value = settings.defaultDirectory;
+
+          if (settings.hasDeepseekKey) {
+            document.querySelector("#deepseek-hint").textContent = "已保存，留空即可继续使用";
+            deepseekKey.placeholder = "已保存";
+          }
+          if (settings.hasTavilyKey) {
+            document.querySelector("#tavily-hint").textContent = "已保存，留空即可继续使用";
+            tavilyKey.placeholder = "已保存";
+          }
+        } catch (error) {
+          setStatus(String(error), true);
+        }
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        submitButton.disabled = true;
+        submitButton.textContent = "执行中";
+        output.textContent = "";
+        setStatus("正在提交任务");
+
+        const onEvent = new Channel();
+        onEvent.onmessage = (message) => {
+          if (message.event === "status") {
+            setStatus(message.data);
+          } else if (message.event === "output") {
+            output.textContent += message.data;
+            output.scrollTop = output.scrollHeight;
+          } else if (message.event === "complete") {
+            setStatus("任务完成");
+          }
+        };
+
+        try {
+          await invoke("run_agent", {
+            request: {
+              deepseekApiKey: deepseekKey.value || null,
+              tavilyApiKey: tavilyKey.value || null,
+              directory: document.querySelector("#directory").value,
+              prompt: document.querySelector("#prompt").value,
+            },
+            onEvent,
+          });
+          deepseekKey.value = "";
+          tavilyKey.value = "";
+          await loadSettings();
+        } catch (error) {
+          if (!output.textContent) output.textContent = "任务未产生输出。";
+          setStatus(String(error), true);
+        } finally {
+          submitButton.disabled = false;
+          submitButton.textContent = "开始执行";
+        }
+      });
+
+      loadSettings();
+    </script>
+  </body>
+</html>
